@@ -1,7 +1,7 @@
 import type { Renderer } from "./renderer";
 
-export interface Shape {
-  update?: (time: number) => boolean | void;
+export interface Shape<T extends Object> {
+  update?: (time: number, controls: T) => boolean | void;
 
   autoDestroy?: boolean;
 
@@ -11,7 +11,7 @@ export interface Shape {
 export type ShapeDef<T extends Object> = (
   hap: Hap<T>,
   renderer: Renderer
-) => Shape;
+) => Shape<T>;
 
 export interface Hap<T> {
   span: {

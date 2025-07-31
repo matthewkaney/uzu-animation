@@ -7,12 +7,16 @@ import {
 } from "three";
 
 import { Shape, ShapeDef, Hap } from "./types";
-import { circle } from "./shapes";
+import { circle, rect } from "./shapes";
 
 // Loaded shapes
-const shapes: { [name: string]: ShapeDef<any> } = { circle };
+const shapes: { [name: string]: ShapeDef<any> } = { circle, rect };
 
 type Dimensions = [number, number];
+
+export function defineDrawing(name: string, shape: ShapeDef<any>) {
+  shapes[name] = shape;
+}
 
 export class Renderer {
   private renderer: WebGLRenderer;
@@ -80,7 +84,10 @@ export class Renderer {
 const context = getDrawContext("animation-canvas", { contextType: "webgl2" });
 const renderer = new Renderer(context);
 
-type ActiveHap = Hap<Shape>;
+export const drawingCanvas = context.canvas;
+
+type ActiveShape<T extends Object> = { shape: Shape<T>; controls: T };
+type ActiveHap = Hap<ActiveShape<any>>;
 
 let scheduled: Hap<unknown>[] = [];
 let active: ActiveHap[] = [];
@@ -103,29 +110,35 @@ function draw(time: number) {
   [deactivating, active] = partition((hap) => hap.span.end < time, active);
 
   for (let hap of deactivating) {
-    hap.value.destroy();
+    hap.value.shape.destroy();
   }
 
   for (let hap of activating) {
     if (
       typeof hap.value === "object" &&
       hap.value !== null &&
-      "image" in hap.value
+      "draw" in hap.value
     ) {
-      if (typeof hap.value.image === "string" && hap.value.image in shapes) {
+      if (typeof hap.value.draw === "string" && hap.value.draw in shapes) {
         active.push({
           ...hap,
-          value: shapes[hap.value.image](hap, renderer),
+          value: {
+            shape: shapes[hap.value.draw](hap, renderer),
+            controls: hap.value,
+          },
         });
       } else {
         // Console log that the shape is not loaded or something?
+        console.log(`Shape "${hap.value.draw}" is not loaded`);
       }
     }
   }
 
   for (let hap of active) {
     // Update drawn haps
-    hap.value.update?.(time);
+    let percent = (time - hap.span.begin) / (hap.span.end - hap.span.begin);
+    let controls = resolveControls(percent, hap.value.controls);
+    hap.value.shape.update?.(time, controls);
   }
 
   renderer.render();
@@ -142,4 +155,14 @@ function partition<T>(test: (value: T) => boolean, list: T[]) {
     },
     [[], []]
   );
+}
+
+function resolveControls(time: number, controls: Object) {
+  let resolved: { [name: string]: any } = {};
+
+  for (let [name, value] of Object.entries(controls)) {
+    resolved[name] = typeof value === "function" ? value(time) : value;
+  }
+
+  return resolved;
 }
