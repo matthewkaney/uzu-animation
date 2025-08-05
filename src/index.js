@@ -10,6 +10,14 @@ register("viz", (pat) =>
     // Schedule animation events
     let begin = (targetTime - currentTime) * 1000 + performance.now();
     let end = (duration / cps) * 1000 + begin;
+
+    value = Object.fromEntries(
+      Object.entries(value).map(([key, control]) => [
+        key,
+        isPattern(control) ? (t) => control.queryArc(t, t)[0]?.value : control,
+      ])
+    );
+
     schedule({ span: { begin, end }, value });
   })
 );
