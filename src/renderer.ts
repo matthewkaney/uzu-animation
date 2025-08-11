@@ -7,10 +7,10 @@ import {
 } from "three";
 
 import { Shape, ShapeDef, Hap } from "./types";
-import { circle, rect } from "./shapes";
+import { circle, ring, rect } from "./shapes";
 
 // Loaded shapes
-const shapes: { [name: string]: ShapeDef<any> } = { circle, rect };
+const shapes: { [name: string]: ShapeDef<any> } = { circle, ring, rect };
 
 type Dimensions = [number, number];
 

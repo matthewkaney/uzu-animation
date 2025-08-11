@@ -4,6 +4,7 @@ import {
   MeshBasicMaterial,
   Color,
   PlaneGeometry,
+  RingGeometry,
 } from "three";
 
 import { ShapeDef } from "./types";
@@ -40,6 +41,34 @@ export const circle: ShapeDef<CircleProps> = (hap, renderer) => {
 
   let mesh = new Mesh(
     circleGeometry,
+    new MeshBasicMaterial({ color: new Color(color) })
+  );
+
+  renderer.add(mesh);
+
+  return {
+    update: (time, controls) => {
+      let { x, y, radius, wide, tall } = {
+        ...circleDefaults,
+        ...controls,
+      };
+      mesh.scale.set(wide ?? 2 * radius ?? 1, tall ?? 2 * radius ?? 1, 1);
+      let scaled = renderer.getPositionInView(x, y);
+      mesh.position.set(scaled.x, scaled.y, 0);
+    },
+    destroy: () => {
+      renderer.remove(mesh);
+    },
+  };
+};
+
+const ringGeometry = new RingGeometry(0.25, 0.5);
+
+export const ring: ShapeDef<CircleProps> = (hap, renderer) => {
+  let { color } = { ...circleDefaults, ...hap.value };
+
+  let mesh = new Mesh(
+    ringGeometry,
     new MeshBasicMaterial({ color: new Color(color) })
   );
 
